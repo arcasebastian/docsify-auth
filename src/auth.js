@@ -1,16 +1,4 @@
 
-// 依赖配置项放到window.$docsify.auth 
-/**
- * auth = {
- *   enable: true,
- *   use: "sha256", //默认sha256,支持md5
- *   password: "e10adc3949ba59abbe56e057f20f883e",
- *   paths: ["^/api"],
- *   title: "请输入密码以访问文档："
- * }
- * 
- * 
- */
 import md5 from 'md5';
 
 function validatePassword(inputPassword, encryptedPassword) {
@@ -53,22 +41,14 @@ function injectStyle() {
 }
 
 function injectAuthDialog() {
-    /**
-     * <div id="auth-dialog" style="display: none;">
-        <h2>请输入密码以访问文档：</h2>
-        <input type="password" id="auth-pwd" placeholder="Password">
-        <button onclick="checkPassword()">提交</button>
-        <p id="error-message" style="color: red; display: none;">密码错误，无法访问文档。</p>
-    </div>
-     */
     let auth = window.$docsify.auth;
     let divEl = document.createElement('div');
     divEl.id = "auth-dialog";
     divEl.style.display = "none";
     divEl.innerHTML = `
-        <span style="font-size:22px;font-weight:blod;">${auth.title}</span>
-        <input type="password" id="auth-pwd" placeholder="Password">
-        <button onclick="checkPassword()">提交</button>
+        <span style="font-size:22px;font-weight:bold;">${auth.title}</span>
+		<div id="g_id_onload" data-client_id="${auth.client_id}" data-callback="onSignIn">
+		<div class="g_id_signin" data-type="standard"></div>
         <p id="error-message" style="color: red; display: none;">密码错误，无法访问。</p>
     `;
     document.getElementsByTagName("body")[0].appendChild(divEl);
@@ -94,13 +74,10 @@ function setAuthDialog(isShow) {
 
 export function install (hook, vm) {
     hook.init(function() {
-        // 初始化并第一次加载完成数据后调用，没有参数。
         injectStyle();
         injectAuthDialog();
     });
     hook.beforeEach(function(content) {
-        // 判断网页地址，是否需要认证，如果需要则弹出密码框
-        // 根据window.$docsify.routerMode来适配获取当前路径
         let rm = window.$docsify.routeMode;
         var currentPath = window.location.hash.split('?')[0].split('#')[1] || '/';
         if (rm == "history") {
@@ -110,15 +87,12 @@ export function install (hook, vm) {
         var needAuth = null;
         let auth = window.$docsify.auth;
         let paths = auth.paths;
-        // 遍历配置，使用正则表达式匹配路径
         for (var i = 0; i < paths.length; i++) {
-            // 匹配路径
             if (new RegExp(paths[i]).test(currentPath)) {
                 needAuth = true;
                 break;
             }
         }
-        // 是否开启认证，且需要认证，且还没有认证过
         if (auth.enable && needAuth && !sessionStorage.getItem('authenticated')) {
             setAuthDialog(true);
             window.checkPassword = function() {
@@ -133,7 +107,7 @@ export function install (hook, vm) {
             return '<div style="color:red;">第一次认证成功后，请重新刷新即可查看内容！</div>';
         } else {
             setAuthDialog(false);
-            return content;  // 返回原始内容
+            return content;
         }
     });
 }
